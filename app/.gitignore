@@ -1,0 +1,13 @@
+*.iml
+.gradle
+/local.properties
+.idea
+.DS_Store
+build
+/captures
+.externalNativeBuild
+/.project
+/gradle.properties
+/detekt-config.yml
+library_recyclertreeview/build
+/legacy/data/schemas/
