@@ -2,9 +2,14 @@ package ru.alexguru.mvi_test.core
 
 import android.util.Log
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.State
-import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.flowWithLifecycle
+import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.channels.BufferOverflow
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.FlowCollector
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -12,14 +17,14 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.launch
 
 interface Reducer<UiState, UiEvent, Action> {
 
     val uiState: StateFlow<UiState>
 
-    val uiEvent: SharedFlow<UiEvent?>
+    val uiEvent: Flow<UiEvent?>
 
     fun handleAction(action: Action)
 }
@@ -36,12 +41,7 @@ abstract class BaseReducer<UiState, UiEvent, Action>(
         extraBufferCapacity = 1,
         onBufferOverflow = BufferOverflow.DROP_OLDEST
     )
-    override val uiEvent: SharedFlow<UiEvent?> = _uiEvent.asSharedFlow()
-//        .onEachShared { event ->
-//            if (event != null) {
-//                _uiEvent.tryEmit(null)
-//            }
-//        }
+    override val uiEvent: Flow<UiEvent?> = _uiEvent.asSharedFlow()
 
     override fun handleAction(action: Action) {
         changeState(action, _uiState.value)
@@ -71,7 +71,7 @@ abstract class DecoratorReducer<UiState, UiEvent, Action> constructor(
 
     override val uiState: StateFlow<UiState>
         get() = dReducer.uiState
-    override val uiEvent: SharedFlow<UiEvent?>
+    override val uiEvent: Flow<UiEvent?>
         get() = dReducer.uiEvent
 
     override fun handleAction(action: Action) {
@@ -119,8 +119,8 @@ class LogsReducer<UiState, UiEvent, Action> constructor(
         }
 
 
-    override val uiEvent: SharedFlow<UiEvent?> =
-        super.uiEvent.onEachShared {
+    override val uiEvent: Flow<UiEvent?> =
+        super.uiEvent.onEach {
             Log.d("happy", "${dReducer.javaClass.simpleName} UiEvent: $it")
         }
 
@@ -138,16 +138,15 @@ fun <UiState, UiEvent, Action> Reducer<UiState, UiEvent, Action>.withLogs(): Red
     return LogsReducer(this)
 }
 
-fun main() {
-
-
-    val shared = MutableSharedFlow<String>(
-        replay = 1,
-        onBufferOverflow = BufferOverflow.DROP_OLDEST
-    )
-    shared.tryEmit("initialValue") // emit the initial value
-    val state = shared.distinctUntilChanged() // get StateFlow-like behavior
-}
-
 @Composable
-fun <T : R, R> SharedFlow<T?>.collectAsSharedState(): State<R?> = collectAsState(initial = null)
+inline fun <reified T> Flow<T>.observeWithLifecycle(
+    lifecycleOwner: LifecycleOwner = LocalLifecycleOwner.current,
+    minActiveState: Lifecycle.State = Lifecycle.State.STARTED,
+    noinline action: suspend (T) -> Unit
+) {
+    LaunchedEffect(key1 = Unit) {
+        lifecycleOwner.lifecycleScope.launch {
+            flowWithLifecycle(lifecycleOwner.lifecycle, minActiveState).collect(action)
+        }
+    }
+}

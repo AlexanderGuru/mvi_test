@@ -10,7 +10,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
-import ru.alexguru.mvi_test.core.collectAsSharedState
+import ru.alexguru.mvi_test.core.observeWithLifecycle
 import ru.alexguru.mvi_test.core.theme.Mvi_testTheme
 import ru.alexguru.mvi_test.ui.main.MainActivityContract
 import ru.alexguru.mvi_test.ui.main.MainReducer
@@ -19,12 +19,18 @@ import ru.alexguru.mvi_test.ui.main.PermissionUseCases
 
 @Composable
 fun MainScreen(vm: MainViewModel) {
-    val event by vm.uiEvent.collectAsSharedState()
-    Log.d("happy", "MainScreen: $event")
-    when(event) {
-        is MainActivityContract.UiEvent.Dialog -> TODO()
-        is MainActivityContract.UiEvent.Toast -> Toast.makeText(LocalContext.current, "Btn click", Toast.LENGTH_SHORT).show()
-        null -> {}
+    val context = LocalContext.current
+    vm.uiEvent.observeWithLifecycle { event ->
+        Log.d("happy", "MainScreen: $event")
+        when (event) {
+            is MainActivityContract.UiEvent.Dialog -> TODO()
+            is MainActivityContract.UiEvent.Toast -> Toast.makeText(
+                context,
+                "Btn click",
+                Toast.LENGTH_SHORT
+            ).show()
+            null -> {}
+        }
     }
     val state by vm.uiState.collectAsState()
     Column {
