@@ -24,10 +24,6 @@ class LogsDecorator<UiState, UiEvent, Action> constructor(
             dReducer._uiEvent = value
         }
 
-    override fun calculateState(throwable: Throwable, currentState: UiState): UiState {
-        return super.calculateState(throwable, currentState)
-    }
-
     override val uiState: StateFlow<UiState> =
         super.uiState.onEachState {
             Log.d("happy", "${dReducer.javaClass.simpleName} UiState: $it")

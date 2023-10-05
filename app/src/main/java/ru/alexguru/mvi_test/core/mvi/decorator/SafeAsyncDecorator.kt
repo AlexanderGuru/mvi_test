@@ -11,7 +11,7 @@ class SafeAsyncDecorator<UiState, UiEvent, Action>(
 ) : DecoratorReducer<UiState, UiEvent, Action>(dReducer) {
 
     private val exceptionHandler: CoroutineExceptionHandler =
-        CoroutineExceptionHandler { coroutineContext, throwable ->
+        CoroutineExceptionHandler { _, throwable ->
             handleError(throwable)
         }
     override val reducerScope: CoroutineScope
