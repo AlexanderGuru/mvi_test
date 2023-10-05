@@ -10,7 +10,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
-import ru.alexguru.mvi_test.core.observeWithLifecycle
+import ru.alexguru.mvi_test.core.mvi.observeWithLifecycle
 import ru.alexguru.mvi_test.core.theme.Mvi_testTheme
 import ru.alexguru.mvi_test.ui.main.MainActivityContract
 import ru.alexguru.mvi_test.ui.main.MainReducer
@@ -35,7 +35,10 @@ fun MainScreen(vm: MainViewModel) {
     val state by vm.uiState.collectAsState()
     Column {
         Text(
-            text = "Click count ${state.index}!",
+            text = "Index ${state.index}!",
+        )
+        Text(
+            text = "Click count ${state.clickCount}!",
         )
         Button(onClick = {
             vm.handleAction(MainActivityContract.Action.BtnClick)

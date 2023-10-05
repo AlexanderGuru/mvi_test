@@ -1,14 +1,14 @@
 package ru.alexguru.mvi_test.ui.main
 
-import androidx.lifecycle.ViewModel
-import ru.alexguru.mvi_test.core.BaseReducer
-import ru.alexguru.mvi_test.core.Reducer
-import ru.alexguru.mvi_test.core.withLogs
+import kotlinx.coroutines.launch
+import ru.alexguru.mvi_test.core.mvi.RViewModel
+import ru.alexguru.mvi_test.core.mvi.Reducer
 
 object MainActivityContract {
 
     data class UiState(
         val index: Int,
+        val clickCount: Int,
         val title: String
     )
 
@@ -26,31 +26,39 @@ object MainActivityContract {
 
 class MainReducer constructor(
     private val useCases: PermissionUseCases
-) : BaseReducer<MainActivityContract.UiState, MainActivityContract.UiEvent, MainActivityContract.Action>(
-    MainActivityContract.UiState(0, "Счетчик")
+) : Reducer<MainActivityContract.UiState, MainActivityContract.UiEvent, MainActivityContract.Action>(
+    MainActivityContract.UiState(0, 0,"Счетчик")
 ) {
 
-    override fun calculateEvent(action: MainActivityContract.Action): MainActivityContract.UiEvent? =
-        when (action) {
-            MainActivityContract.Action.BtnClick -> MainActivityContract.UiEvent.Toast("Ты нажал на кнопку!")
+    init {
+        reducerScope.launch {
+            useCases.getIndexFlow
+                .subscribe {
+                    _uiState = _uiState.copy(index = it)
+                }
         }
-
+    }
 
     override fun calculateState(
         action: MainActivityContract.Action,
         currentState: MainActivityContract.UiState
     ): MainActivityContract.UiState =
         when (action) {
-            MainActivityContract.Action.BtnClick -> currentState.copy(index = currentState.index + 1)
+            MainActivityContract.Action.BtnClick -> currentState.copy(clickCount = currentState.clickCount + 1)
         }
+
+    override fun calculateEvent(action: MainActivityContract.Action): MainActivityContract.UiEvent =
+        when (action) {
+            MainActivityContract.Action.BtnClick -> MainActivityContract.UiEvent.Toast("Ты нажал на кнопку!")
+        }
+
+    override fun calculateEvent(throwable: Throwable): MainActivityContract.UiEvent =
+        MainActivityContract.UiEvent.Toast(throwable.message.orEmpty())
+
 }
 
-abstract class RViewModel<UiState, UiEvent, Action> constructor(
-    private val reducer: Reducer<UiState, UiEvent, Action>
-) : ViewModel(), Reducer<UiState, UiEvent, Action> by reducer.withLogs()
 
-class MainViewModel(
-    reducer: MainReducer
-) : RViewModel<MainActivityContract.UiState, MainActivityContract.UiEvent, MainActivityContract.Action>(
-    reducer
-)
+class MainViewModel(mainReducer: MainReducer) :
+    RViewModel<MainActivityContract.UiState, MainActivityContract.UiEvent, MainActivityContract.Action>(
+        reducer = mainReducer
+    )
