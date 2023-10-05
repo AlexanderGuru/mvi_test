@@ -12,6 +12,16 @@ abstract class DecoratorReducer<UiState, UiEvent, Action> constructor(
     stateProvider = dReducer.stateProvider,
     eventProvider = dReducer.eventProvider
 ) {
+    override var _uiState: UiState
+        get() = dReducer._uiState
+        set(value) {
+            dReducer._uiState = value
+        }
+    override var _uiEvent: UiEvent?
+        get() = dReducer._uiEvent
+        set(value) {
+            dReducer._uiEvent = value
+        }
 
     override val uiState: StateFlow<UiState>
         get() = dReducer.uiState
@@ -26,17 +36,17 @@ abstract class DecoratorReducer<UiState, UiEvent, Action> constructor(
         dReducer.handleError(throwable)
     }
 
-    override fun calculateState(throwable: Throwable, currentState: UiState): UiState {
+    override suspend fun calculateState(throwable: Throwable, currentState: UiState): UiState {
         return dReducer.calculateState(throwable, currentState)
     }
 
-    override fun calculateEvent(throwable: Throwable): UiEvent? =
+    override suspend fun calculateEvent(throwable: Throwable): UiEvent? =
         dReducer.calculateEvent(throwable)
 
-    override fun calculateState(action: Action, currentState: UiState): UiState =
+    override suspend fun calculateState(action: Action, currentState: UiState): UiState =
         dReducer.calculateState(action, currentState)
 
-    override fun calculateEvent(action: Action): UiEvent? =
+    override suspend fun calculateEvent(action: Action): UiEvent? =
         dReducer.calculateEvent(action)
 }
 

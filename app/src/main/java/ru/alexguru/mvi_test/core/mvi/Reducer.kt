@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.onCompletion
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.launch
 
 interface StateProvider<UiState> {
     val uiState: StateFlow<UiState>
@@ -84,39 +85,47 @@ abstract class Reducer<UiState, UiEvent, Action>(
     }
 
     private fun changeState(throwable: Throwable, currentState: UiState) {
-        val newState = calculateState(throwable, currentState)
-        if (currentState != newState) {
-            stateProvider._uiState.value = newState
+        reducerScope.launch {
+            val newState = calculateState(throwable, currentState)
+            if (currentState != newState) {
+                stateProvider._uiState.value = newState
+            }
         }
     }
 
     private fun changeEvent(throwable: Throwable) {
-        val newEvent = calculateEvent(throwable)
-        eventProvider._uiEvent.tryEmit(newEvent)
+        reducerScope.launch {
+            val newEvent = calculateEvent(throwable)
+            eventProvider._uiEvent.emit(newEvent)
+        }
     }
 
     private fun changeState(action: Action, currentState: UiState) {
-        val newState = calculateState(action, currentState)
-        if (currentState != newState) {
-            stateProvider._uiState.value = newState
+        reducerScope.launch {
+            val newState = calculateState(action, currentState)
+            if (currentState != newState) {
+                stateProvider._uiState.value = newState
+            }
         }
     }
 
     private fun changeEvent(action: Action) {
-        val newEvent = calculateEvent(action)
-        eventProvider._uiEvent.tryEmit(newEvent)
+        reducerScope.launch {
+            val newEvent = calculateEvent(action)
+            eventProvider._uiEvent.emit(newEvent)
+        }
     }
 
-    internal open fun calculateState(
+    internal open suspend fun calculateState(
         throwable: Throwable,
         currentState: UiState
     ): UiState = currentState
 
-    internal abstract fun calculateEvent(throwable: Throwable): UiEvent?
+    internal abstract suspend fun calculateEvent(throwable: Throwable): UiEvent?
 
-    internal abstract fun calculateState(action: Action, currentState: UiState): UiState
+    internal abstract suspend fun calculateState(action: Action, currentState: UiState): UiState
 
-    internal abstract fun calculateEvent(action: Action): UiEvent?
+    internal abstract suspend fun calculateEvent(action: Action): UiEvent?
 
     protected suspend fun <T> Flow<T>.subscribe(
         onError: (Throwable) -> Unit = { handleError(it) },

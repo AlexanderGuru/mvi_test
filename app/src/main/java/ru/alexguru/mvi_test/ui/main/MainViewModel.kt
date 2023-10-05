@@ -39,7 +39,7 @@ class MainReducer constructor(
         }
     }
 
-    override fun calculateState(
+    override suspend fun calculateState(
         action: MainActivityContract.Action,
         currentState: MainActivityContract.UiState
     ): MainActivityContract.UiState =
@@ -47,16 +47,15 @@ class MainReducer constructor(
             MainActivityContract.Action.BtnClick -> currentState.copy(clickCount = currentState.clickCount + 1)
         }
 
-    override fun calculateEvent(action: MainActivityContract.Action): MainActivityContract.UiEvent =
+    override suspend fun calculateEvent(action: MainActivityContract.Action): MainActivityContract.UiEvent =
         when (action) {
             MainActivityContract.Action.BtnClick -> MainActivityContract.UiEvent.Toast("Ты нажал на кнопку!")
         }
 
-    override fun calculateEvent(throwable: Throwable): MainActivityContract.UiEvent =
+    override suspend fun calculateEvent(throwable: Throwable): MainActivityContract.UiEvent =
         MainActivityContract.UiEvent.Toast(throwable.message.orEmpty())
 
 }
-
 
 class MainViewModel(mainReducer: MainReducer) :
     RViewModel<MainActivityContract.UiState, MainActivityContract.UiEvent, MainActivityContract.Action>(
